@@ -37,7 +37,7 @@ public class PersonTest {
 
     @Test
     public void testAddPersonInvalidDOB() {
-        Person p = new Person(validID, "Alice", "Smith", validAddress, "1990-12-01");
+        Person p = new Person(validID, "Alice", "Smith", validAddress, "1990-December-01");
         assertFalse(p.addPerson());
     }
 
