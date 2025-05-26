@@ -1,12 +1,15 @@
 package person;
 
+import java.io.BufferedReader;
 import java.io.BufferedWriter;
+import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.HashMap;
 import java.util.Date;
+import java.time.LocalDateTime;
 
 public class Person {
     private String personID;
@@ -53,9 +56,56 @@ public class Person {
         }
     }
 
-    public boolean updatePersonalDetails(String personID, String firstName, String lastName, String address, String birthdate) {
+    public boolean updatePersonalDetails(String personID, String firstName, String lastName, String address, String birthDate) {
+        boolean success = true;
 
-        return true;
+        // Validate the user is over 18 years old
+        if (this.getAge(new SimpleDateFormat("dd-MM-yyyy").format(new Date())) < 18) {
+            return false;
+        }
+        // Validate only the date of birth is being changed 
+        if (!birthDate.isEmpty() && (!firstName.isEmpty() || !lastName.isEmpty() || !address.isEmpty())) {
+            return false;
+        }
+        if ((int) this.personID.charAt(0) % 2 == 0) {
+            return false;
+        }
+
+        if (!personID.isEmpty() && isValidPersonID(personID)) this.personID = personID;
+        if (!firstName.isEmpty()) this.firstName = firstName;
+        if (!lastName.isEmpty()) this.lastName = lastName;
+        if (!address.isEmpty() && isValidAddress(address)) this.address = address;
+        if (!birthDate.isEmpty() && isValidDate(birthDate)) this.birthDate = birthDate;
+        
+
+        String personText = "";
+        boolean found = false;
+        try (BufferedReader reader = new BufferedReader(new FileReader("people.txt"))) {
+            while ((personText = reader.readLine()) != null) {
+                if (personText.contains(personID)) found = true;
+                break;
+            }
+        } catch (IOException e) {
+            System.err.println("File read error");
+            success = false;
+        }
+
+        if (found) {
+            System.out.println("User: " + personText);
+
+            try (BufferedWriter writer = new BufferedWriter(new FileWriter("people.txt", true))) {
+                writer.write(this.toFileString());
+                writer.newLine();
+            } catch (IOException e) {
+                System.err.println("File write error");
+                success = false;
+            }
+            
+        } else {
+            System.err.println("User entry not found");
+            success = false;
+        }
+        return success;
     }
 
     public String addDemeritPoints(String date, int points) {
