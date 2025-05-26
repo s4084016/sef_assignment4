@@ -7,9 +7,11 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.time.LocalDate;
+import java.time.Period;
+import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
 import java.util.Date;
-import java.time.LocalDateTime;
 
 public class Person {
     private String personID;
@@ -17,7 +19,7 @@ public class Person {
     private String lastName;
     private String address;
     private String birthDate;
-    private HashMap<Date, Integer> demeritRecords;
+    private HashMap<String, Integer> demeritRecords;
     private boolean isSuspended;
 
     public Person(String personID, String firstName, String lastName, String address, String birthdate) {
@@ -109,8 +111,35 @@ public class Person {
     }
 
     public String addDemeritPoints(String date, int points) {
+        boolean isSuccess = points >= 1 && points <= 6 && this.isValidDate(date);
+        if (!isSuccess) {
+            return "Failed";
+        }
+        // Assuming that birthDate is validated by this point
+        long age = this.getAge(date);
+
+        int suspensionThreshold = age <= 21 ? 6 : 12;
+        int totalDemeritPoints = demeritRecords.values().stream().mapToInt(Integer::intValue).sum();
+        if (totalDemeritPoints + points > suspensionThreshold) {
+            this.isSuspended = true;
+        }
+
+        try (BufferedWriter writer = new BufferedWriter(new FileWriter("people.txt", true))) {
+            writer.write(String.format("%s %s %d", this.personID, date, points));
+            writer.newLine();
+            demeritRecords.put(date, points);
+        } catch (IOException e) {
+            return "Failed";
+        }
 
         return "Success";
+    }
+
+    private long getAge(String currentDate) {
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd-MM-yyyy");
+        LocalDate startDate = LocalDate.parse(this.birthDate, formatter);
+        LocalDate endDate = LocalDate.parse(currentDate, formatter);
+        return Period.between(startDate, endDate).getYears();
     }
 
     private boolean isValidPersonID(String id) {
@@ -134,4 +163,6 @@ public class Person {
     private String toFileString() {
         return personID + "|" + firstName + "|" + lastName + "|" + address + "|" + birthDate + "|" + isSuspended;
     }
+
+
 }
