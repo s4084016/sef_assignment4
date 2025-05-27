@@ -116,10 +116,24 @@ public class PersonTest {
     }
 
     @Test
+    public void testAddDemeritValidDate() {
+        Person p = new Person(validID, "Test", "User", validAddress, validDOB);
+        p.addPerson();
+        assertEquals("Success", p.addDemeritPoints("05-02-2020", 5));
+    }
+
+    @Test
     public void testAddDemeritInvalidPointsLow() {
         Person p = new Person(validID, "Test", "User", validAddress, validDOB);
         p.addPerson();
         assertEquals("Failed", p.addDemeritPoints("01-01-2023", 0));
+    }
+
+    @Test
+    public void testAddDemeritValidPoints() {
+        Person p = new Person(validID, "Test", "User", validAddress, validDOB);
+        p.addPerson();
+        assertEquals("Success", p.addDemeritPoints("01-01-2023", 3));
     }
 
     @Test
@@ -134,14 +148,14 @@ public class PersonTest {
         String dob = "01-01-2007"; // under 21
         Person p = new Person(validID, "Test", "User", validAddress, dob);
         p.addPerson();
-        for (int i = 0; i < 3; i++) {
-            p.addDemeritPoints("01-01-2024", 3);
-        }
+        p.addDemeritPoints("01-01-2024", 3);
+        p.addDemeritPoints("02-01-2024", 1);
+        p.addDemeritPoints("04-05-2024", 4);
         boolean found = false;
         try (BufferedReader reader = new BufferedReader(new FileReader("people.txt"))) {
             String line;
             while ((line = reader.readLine()) != null) {
-                if (line.contains("suspended=true")) found = true;
+                if (line.contains("suspended=true") && line.contains(validID)) found = true;
             }
         } catch (IOException e) { fail("File read error"); }
         assertTrue(found);

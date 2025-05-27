@@ -111,6 +111,7 @@ public class Person {
     }
 
     public String addDemeritPoints(String date, int points) {
+        // Check for point range and validity of date
         boolean isSuccess = points >= 1 && points <= 6 && this.isValidDate(date);
         if (!isSuccess) {
             return "Failed";
@@ -124,8 +125,11 @@ public class Person {
             this.isSuspended = true;
         }
 
+        // Create bufferedWriter to update people.txt file
         try (BufferedWriter writer = new BufferedWriter(new FileWriter("people.txt", true))) {
             writer.write(String.format("%s %s %d", this.personID, date, points));
+            writer.newLine();
+            writer.write(toFileString());
             writer.newLine();
             demeritRecords.put(date, points);
         } catch (IOException e) {
@@ -136,6 +140,7 @@ public class Person {
     }
 
     private long getAge(String currentDate) {
+        // Use dateTimeFormatter to convert string dates into localDates, so I can find out the days in between
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd-MM-yyyy");
         LocalDate startDate = LocalDate.parse(this.birthDate, formatter);
         LocalDate endDate = LocalDate.parse(currentDate, formatter);
@@ -161,7 +166,7 @@ public class Person {
     }
 
     private String toFileString() {
-        return personID + "|" + firstName + "|" + lastName + "|" + address + "|" + birthDate + "|" + isSuspended;
+        return personID + "|" + firstName + "|" + lastName + "|" + address + "|" + birthDate + "|suspended=" + isSuspended;
     }
 
 
