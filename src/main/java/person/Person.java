@@ -11,6 +11,8 @@ import java.time.LocalDate;
 import java.time.Period;
 import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
+import java.util.List;
+import java.util.ArrayList;
 import java.util.Date;
 
 public class Person {
@@ -59,55 +61,64 @@ public class Person {
     }
 
     public boolean updatePersonalDetails(String personID, String firstName, String lastName, String address, String birthDate) {
-        boolean success = true;
+        List<String> linesList = new ArrayList<>();
+        int personLineIndex = -1;
 
-        // Validate the user is over 18 years old
-        if (this.getAge(new SimpleDateFormat("dd-MM-yyyy").format(new Date())) < 18) {
-            return false;
-        }
-        // Validate only the date of birth is being changed 
-        if (!birthDate.isEmpty() && (!firstName.isEmpty() || !lastName.isEmpty() || !address.isEmpty())) {
-            return false;
-        }
-        if ((int) this.personID.charAt(0) % 2 == 0) {
-            return false;
-        }
-
-        if (!personID.isEmpty() && isValidPersonID(personID)) this.personID = personID;
-        if (!firstName.isEmpty()) this.firstName = firstName;
-        if (!lastName.isEmpty()) this.lastName = lastName;
-        if (!address.isEmpty() && isValidAddress(address)) this.address = address;
-        if (!birthDate.isEmpty() && isValidDate(birthDate)) this.birthDate = birthDate;
-        
-
-        String personText = "";
-        boolean found = false;
+        // Attempt to locate user while reading file and record index if found
         try (BufferedReader reader = new BufferedReader(new FileReader("people.txt"))) {
-            while ((personText = reader.readLine()) != null) {
-                if (personText.contains(personID)) found = true;
-                break;
+            String line;
+            int curLineIndex = 0;
+            while ((line = reader.readLine()) != null) {
+                linesList.add(line);
+                if (line.startsWith(personID + "|") && personLineIndex < 0) {
+                    personLineIndex = curLineIndex;
+                }
+                curLineIndex++;
             }
         } catch (IOException e) {
             System.err.println("File read error");
-            success = false;
+            return false;
         }
 
-        if (found) {
-            System.out.println("User: " + personText);
+        if (personLineIndex >= 0) {
+            // Validate the user is over 18 years old
+            if (this.getAge(new SimpleDateFormat("dd-MM-yyyy").format(new Date())) < 18) {
+                return false;
+            }
+            // Validate only the date of birth is being changed 
+            if ((!birthDate.isEmpty() && this.birthDate != birthDate) && (!firstName.isEmpty() || !lastName.isEmpty() || !address.isEmpty())) {
+                return false;
+            }
+            // Validate ID
+            if (!Character.isDigit(this.personID.charAt(0)) || (this.personID.charAt(0) - '0') % 2 == 0) {
+                return false;
+            }
 
-            try (BufferedWriter writer = new BufferedWriter(new FileWriter("people.txt", true))) {
-                writer.write(this.toFileString());
-                writer.newLine();
+            // Update properties in class
+            if (!personID.isEmpty() && isValidPersonID(personID)) this.personID = personID;
+            if (!firstName.isEmpty()) this.firstName = firstName;
+            if (!lastName.isEmpty()) this.lastName = lastName;
+            if (!address.isEmpty() && isValidAddress(address)) this.address = address;
+            if (!birthDate.isEmpty() && isValidDate(birthDate)) this.birthDate = birthDate;
+
+            // Update file with new entry for person (updated)
+            try (BufferedWriter writer = new BufferedWriter(new FileWriter("people.txt"))) {
+                for (int i = 0; i < linesList.size(); i++) {
+                    if (i != personLineIndex) writer.write(linesList.get(i));
+                    else {
+                        writer.write(this.toFileString());
+                    }
+                    writer.newLine();
+                }
             } catch (IOException e) {
                 System.err.println("File write error");
-                success = false;
+                return false;
             }
-            
         } else {
             System.err.println("User entry not found");
-            success = false;
+            return false;
         }
-        return success;
+        return true;
     }
 
     public String addDemeritPoints(String date, int points) {
